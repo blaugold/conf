@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'error.dart';
 import 'source.dart';
@@ -177,6 +178,22 @@ class ConfBoolean extends ConfScalar<bool> {
       default:
         throw FormatException('Expected a boolean value but got "$value".');
     }
+  }
+}
+
+/// A [ConfScalar] that loads an [InternetAddress] value.
+class ConfInternetAddress extends ConfScalar<InternetAddress> {
+  ConfInternetAddress() : super('InternetAddress');
+
+  @override
+  InternetAddress loadValue(String value) {
+    final address = InternetAddress.tryParse(value);
+    if (address == null) {
+      throw FormatException(
+        'Expected an IPv4 or IPv6 address but got "$value".',
+      );
+    }
+    return address;
   }
 }
 
