@@ -7,6 +7,7 @@ export 'src/schema.dart'
         ConfDouble,
         ConfigurationSchemaNode,
         ConfInteger,
+        ConfInternetAddress,
         ConfList,
         ConfNullable,
         ConfNumber,

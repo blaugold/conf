@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:conf/conf.dart';
 import 'package:test/test.dart';
 
@@ -39,6 +41,7 @@ void main() {
         'float': '1.0',
         'uri': 'https://example.com',
         'dateTime': '2021-01-01T00:00:00.000Z',
+        'internetAddress': '127.0.0.1',
       });
       final result = await BuiltinScalarsObject.schema.load(source);
       expect(result.hasErrors, isFalse);
@@ -53,6 +56,7 @@ void main() {
         value.dateTime,
         equals(DateTime.parse('2021-01-01T00:00:00.000Z')),
       );
+      expect(value.internetAddress, equals(InternetAddress.loopbackIPv4));
     });
   });
 
@@ -181,9 +185,10 @@ class BuiltinScalarsObject {
     required this.float,
     required this.uri,
     required this.dateTime,
+    required this.internetAddress,
   });
 
-  factory BuiltinScalarsObject.fromJson(Map<String, Object?> json) =>
+  factory BuiltinScalarsObject.fromMap(Map<String, Object?> json) =>
       BuiltinScalarsObject(
         string: json['string']! as String,
         boolean: json['boolean']! as bool,
@@ -192,6 +197,7 @@ class BuiltinScalarsObject {
         float: json['float']! as double,
         uri: json['uri']! as Uri,
         dateTime: json['dateTime']! as DateTime,
+        internetAddress: json['internetAddress']! as InternetAddress,
       );
 
   static final schema = ConfObject(
@@ -203,8 +209,9 @@ class BuiltinScalarsObject {
       'float': ConfDouble(),
       'uri': ConfUri(),
       'dateTime': ConfDateTime(),
+      'internetAddress': ConfInternetAddress(),
     },
-    factory: BuiltinScalarsObject.fromJson,
+    factory: BuiltinScalarsObject.fromMap,
   );
 
   final String string;
@@ -214,4 +221,5 @@ class BuiltinScalarsObject {
   final double float;
   final Uri uri;
   final DateTime dateTime;
+  final InternetAddress internetAddress;
 }
