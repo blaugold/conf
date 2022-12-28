@@ -30,3 +30,6 @@ jobs:
 
       - name: Test
         run: melos test
+
+      - name: Run example
+        run: melos example
