@@ -1,0 +1,23 @@
+name: conf
+repository: https://github.com/blaugold/conf.git
+packages:
+  - .
+
+ide:
+  intellij: false
+
+command:
+  bootstrap:
+    usePubspecOverrides: true
+  version:
+    linkToCommits: true
+    branch: main
+
+scripts:
+  format: dart format .
+
+  format:check: dart format --set-exit-if-changed .
+
+  analyze: dart analyze .
+
+  test: dart test

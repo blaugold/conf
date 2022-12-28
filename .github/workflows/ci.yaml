@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1.3
+
+      - name: Install Melos
+        run: dart pub global activate melos 2.9.0
+
+      - name: Melos bootstrap
+        run: melos bootstrap
+
+      - name: Check formatting
+        run: melos format:check
+
+      - name: Analyze
+        run: melos analyze
+
+      - name: Test
+        run: melos test
