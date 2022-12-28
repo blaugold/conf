@@ -3,6 +3,8 @@ description:
   Schema based configuration management that supports combining multiple
   configuration sources.
 version: 0.1.0
+repository: https://github.com/blaugold/conf
+issue_tracker: https://github.com/blaugold/conf/issues
 
 environment:
   sdk: '>=2.18.0 <3.0.0'
