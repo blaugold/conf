@@ -2,6 +2,7 @@ name: conf
 repository: https://github.com/blaugold/conf.git
 packages:
   - .
+  - example
 
 ide:
   intellij: false
@@ -21,3 +22,9 @@ scripts:
   analyze: dart analyze .
 
   test: dart test
+
+  example:
+    exec: dart run main.dart
+    select-package:
+      scope:
+        - conf_example
