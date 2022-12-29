@@ -42,6 +42,7 @@ void main() {
         'uri': 'https://example.com',
         'dateTime': '2021-01-01T00:00:00.000Z',
         'internetAddress': '127.0.0.1',
+        'testEnum': 'a'
       });
       final result = await BuiltinScalarsObject.schema.load(source);
       expect(result.hasErrors, isFalse);
@@ -57,6 +58,7 @@ void main() {
         equals(DateTime.parse('2021-01-01T00:00:00.000Z')),
       );
       expect(value.internetAddress, equals(InternetAddress.loopbackIPv4));
+      expect(value.testEnum, equals(TestEnum.a));
     });
   });
 
@@ -176,6 +178,8 @@ void main() {
   });
 }
 
+enum TestEnum { a, b }
+
 class BuiltinScalarsObject {
   BuiltinScalarsObject({
     required this.string,
@@ -186,6 +190,7 @@ class BuiltinScalarsObject {
     required this.uri,
     required this.dateTime,
     required this.internetAddress,
+    required this.testEnum,
   });
 
   factory BuiltinScalarsObject.fromMap(Map<String, Object?> json) =>
@@ -198,6 +203,7 @@ class BuiltinScalarsObject {
         uri: json['uri']! as Uri,
         dateTime: json['dateTime']! as DateTime,
         internetAddress: json['internetAddress']! as InternetAddress,
+        testEnum: json['testEnum']! as TestEnum,
       );
 
   static final schema = ConfObject(
@@ -210,6 +216,7 @@ class BuiltinScalarsObject {
       'uri': ConfUri(),
       'dateTime': ConfDateTime(),
       'internetAddress': ConfInternetAddress(),
+      'testEnum': ConfEnum(TestEnum.values),
     },
     factory: BuiltinScalarsObject.fromMap,
   );
@@ -222,4 +229,5 @@ class BuiltinScalarsObject {
   final Uri uri;
   final DateTime dateTime;
   final InternetAddress internetAddress;
+  final TestEnum testEnum;
 }

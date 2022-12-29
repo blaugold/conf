@@ -5,6 +5,7 @@ export 'src/schema.dart'
         ConfDateTime,
         ConfDefault,
         ConfDouble,
+        ConfEnum,
         ConfigurationSchemaNode,
         ConfInteger,
         ConfInternetAddress,
