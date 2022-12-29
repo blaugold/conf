@@ -46,6 +46,16 @@ abstract class ConfigurationSchemaNode<T> {
   }
 }
 
+/// A configuration schema node that can [load] a value from a
+/// [ConfigurationSource] without requiring a [ConfigurationKey].
+abstract class RootSchemaNode<T> extends ConfigurationSchemaNode<T> {
+  @override
+  Future<LoadConfigurationResult<T>> load(
+    ConfigurationSource source, [
+    ConfigurationKey? key,
+  ]);
+}
+
 abstract class _SingleChildConfigurationSchemaNode<C, T>
     extends ConfigurationSchemaNode<T> {
   _SingleChildConfigurationSchemaNode(ConfigurationSchemaNode<C> child) {
@@ -263,7 +273,8 @@ class ConfDefault<T> extends _ProxyConfigurationSchemaNode<T> {
 /// A [ConfigurationSchemaNode] that loads a configuration value from
 /// a key that is calculated by appending a [base] key to the key that is
 /// passed to [load].
-class ConfRebase<T> extends _ProxyConfigurationSchemaNode<T> {
+class ConfRebase<T> extends _ProxyConfigurationSchemaNode<T>
+    implements RootSchemaNode<T> {
   ConfRebase(this.base, super.child);
 
   /// The key to use as the base when loading the configuration value.
@@ -324,7 +335,8 @@ typedef ConfObjectFactory<T> = T Function(Map<String, Object?> properties);
 
 /// A [ConfigurationSchemaNode] that loads a configuration value by composing
 /// multiple configuration values into a single object.
-class ConfObject<T> extends ConfigurationSchemaNode<T> {
+class ConfObject<T> extends ConfigurationSchemaNode<T>
+    implements RootSchemaNode<T> {
   /// Convenience constructor that creates a new [ConfObject]
   /// without having to create a [ConfProperty] for each property.
   ConfObject({
