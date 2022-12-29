@@ -20,7 +20,8 @@ export 'src/schema.dart'
         ConfString,
         ConfUri,
         FunctionConfScalar,
-        LoadConfigurationResult;
+        LoadConfigurationResult,
+        RootSchemaNode;
 export 'src/source.dart'
     show
         CommandLineSource,
