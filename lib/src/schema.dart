@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
+
 import 'error.dart';
 import 'source.dart';
 
@@ -194,6 +196,29 @@ class ConfInternetAddress extends ConfScalar<InternetAddress> {
       );
     }
     return address;
+  }
+}
+
+/// A [ConfScalar] that loads an [Enum] value.
+class ConfEnum<T extends Enum> extends ConfScalar<T> {
+  ConfEnum(this.values) : super('Enum');
+
+  /// The enum values that this scalar can load.
+  final List<T> values;
+
+  @override
+  T loadValue(String value) {
+    final enumValue =
+        values.firstWhereOrNull((enumValue) => enumValue.name == value);
+
+    if (enumValue == null) {
+      final enumValues = values.map((value) => value.name).join(', ');
+      throw FormatException(
+        'Expected one of $enumValues but got "$value".',
+      );
+    }
+
+    return enumValue;
   }
 }
 
