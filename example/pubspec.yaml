@@ -8,3 +8,5 @@ bin:
 
 dependencies:
   conf: ^0.2.0
+  shelf: ^1.4.0
+  shelf_router: ^1.1.3

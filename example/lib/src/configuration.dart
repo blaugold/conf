@@ -14,6 +14,7 @@ enum Profile {
 
 class ServerConfiguration {
   ServerConfiguration({
+    required this.startServer,
     required this.port,
     required this.address,
     required this.logRequests,
@@ -22,6 +23,7 @@ class ServerConfiguration {
 
   factory ServerConfiguration._factory(Map<String, Object?> map) =>
       ServerConfiguration(
+        startServer: map['startServer']! as bool,
         port: map['port']! as int,
         address: map['address']! as InternetAddress,
         logRequests: map['logRequests']! as bool,
@@ -43,6 +45,7 @@ class ServerConfiguration {
 
   static final schema = ConfObject(
     propertiesMap: {
+      'startServer': ConfDefault(ConfBoolean(), defaultValue: true),
       'port': ConfDefault(ConfInteger(), defaultValue: 8080),
       'address': ConfDefault(
         ConfInternetAddress(),
@@ -54,12 +57,14 @@ class ServerConfiguration {
     factory: ServerConfiguration._factory,
   );
 
+  final bool startServer;
   final int port;
   final InternetAddress address;
   final bool logRequests;
   final DatabaseConfiguration database;
 
   Map<String, Object?> toJson() => {
+        'startServer': startServer,
         'port': port,
         'address': address.address,
         'logRequests': logRequests,

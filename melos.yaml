@@ -24,7 +24,7 @@ scripts:
   test: dart test
 
   example:
-    exec: dart run
+    exec: dart run conf_example --startServer false
     select-package:
       scope:
         - conf_example
