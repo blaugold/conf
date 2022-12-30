@@ -199,7 +199,7 @@ class BuiltinScalarsObject {
     required this.testEnum,
   });
 
-  factory BuiltinScalarsObject.fromMap(Map<String, Object?> json) =>
+  factory BuiltinScalarsObject._factory(Map<String, Object?> json) =>
       BuiltinScalarsObject(
         string: json['string']! as String,
         boolean: json['boolean']! as bool,
@@ -224,7 +224,7 @@ class BuiltinScalarsObject {
       'internetAddress': ConfInternetAddress(),
       'testEnum': ConfEnum(TestEnum.values),
     },
-    factory: BuiltinScalarsObject.fromMap,
+    factory: BuiltinScalarsObject._factory,
   );
 
   final String string;

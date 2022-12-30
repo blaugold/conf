@@ -74,7 +74,7 @@ class DatabaseConfiguration {
     required this.password,
   });
 
-  factory DatabaseConfiguration.fromMap(Map<String, Object?> map) =>
+  factory DatabaseConfiguration._factory(Map<String, Object?> map) =>
       DatabaseConfiguration(
         url: map['url']! as Uri,
         username: map['username']! as String,
@@ -87,7 +87,7 @@ class DatabaseConfiguration {
       'username': ConfString(),
       'password': ConfString(),
     },
-    factory: DatabaseConfiguration.fromMap,
+    factory: DatabaseConfiguration._factory,
   );
 
   final Uri url;
