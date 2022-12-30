@@ -18,13 +18,15 @@ extension AppSources on CombiningSource {
   /// 2. Command line arguments
   /// 3. CONF_JSON environment variable
   /// 4. Environment variables
-  /// 5. Configuration files in "config" directory:
-  ///    1. application.$profile.json
-  ///    2. application.$profile.yaml
-  ///    3. application.$profile.yml
-  ///    4. application.json
-  ///    5. application.yaml
-  ///    6. application.yml
+  /// 5. Configuration files in `config` directory:
+  ///    1. For each profile in alphabetical order:
+  ///       1. `application.$profile.json`
+  ///       2. `application.$profile.yaml`
+  ///       3. `application.$profile.yml`
+  ///    2. The base configuration:
+  ///       1. `application.json`
+  ///       2. `application.yaml`
+  ///       3. `application.yml`
   static Future<ConfigurationSource> load<P extends Enum>({
     List<String>? arguments,
     Map<String, String>? environment,
@@ -77,7 +79,7 @@ extension AppSources on CombiningSource {
       await loadConfigurationFiles(
         directory: 'config',
         configName: 'application',
-        variants: profiles.map((profile) => profile.name).toList(),
+        variants: profiles.map((profile) => profile.name).toList()..sort(),
       ),
     );
   }

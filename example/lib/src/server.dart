@@ -21,6 +21,9 @@ Future<void> _startServer(List<String> arguments) async {
   print('Active profiles: ${Profile.active}');
   print(
     'Configuration:\n'
-    '${const JsonEncoder.withIndent('  ').convert(configuration.toJson())}',
+    '${_prettyPrintJson(configuration.toJson())}',
   );
 }
+
+String _prettyPrintJson(Object? json) =>
+    const JsonEncoder.withIndent('  ').convert(json);
