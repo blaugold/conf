@@ -24,7 +24,7 @@ scripts:
   test: dart test
 
   example:
-    exec: dart run main.dart
+    exec: dart run
     select-package:
       scope:
         - conf_example

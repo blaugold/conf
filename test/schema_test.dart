@@ -133,8 +133,10 @@ void main() {
   group('ConfObject', () {
     test('reports errors from child values', () async {
       final source = TestSource({'a': 'a'});
-      final object =
-          ConfObject(properties: {'a': ConfBoolean()}, factory: (map) => map);
+      final object = ConfObject(
+        propertiesMap: {'a': ConfBoolean()},
+        factory: (map) => map,
+      );
       final result = await object.load(source);
       expect(result.hasErrors, isTrue);
       expect(result.errors, hasLength(1));
@@ -148,7 +150,7 @@ void main() {
 
     test('throws when property names are not unique', () {
       expect(
-        () => ConfObject.fromProperties(
+        () => ConfObject(
           properties: [
             ConfProperty('a', ConfString()),
             ConfProperty('a', ConfString()),
@@ -161,7 +163,7 @@ void main() {
 
     test('empty object', () async {
       final source = TestSource({});
-      final object = ConfObject(properties: {}, factory: (map) => map);
+      final object = ConfObject(propertiesMap: {}, factory: (map) => map);
       final result = await object.load(source);
       expect(result.hasErrors, isFalse);
       expect(result.value, equals({}));
@@ -170,7 +172,7 @@ void main() {
     test('1 property object', () async {
       final source = TestSource({'a': 'a'});
       final object =
-          ConfObject(properties: {'a': ConfString()}, factory: (map) => map);
+          ConfObject(propertiesMap: {'a': ConfString()}, factory: (map) => map);
       final result = await object.load(source);
       expect(result.hasErrors, isFalse);
       expect(result.value, equals({'a': 'a'}));
@@ -207,7 +209,7 @@ class BuiltinScalarsObject {
       );
 
   static final schema = ConfObject(
-    properties: {
+    propertiesMap: {
       'string': ConfString(),
       'boolean': ConfBoolean(),
       'number': ConfNumber(),

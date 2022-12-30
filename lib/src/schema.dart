@@ -337,25 +337,28 @@ typedef ConfObjectFactory<T> = T Function(Map<String, Object?> properties);
 /// multiple configuration values into a single object.
 class ConfObject<T> extends ConfigurationSchemaNode<T>
     implements RootSchemaNode<T> {
-  /// Convenience constructor that creates a new [ConfObject]
-  /// without having to create a [ConfProperty] for each property.
+  /// Creates a new [ConfObject] with the given [properties].
+  ///
+  /// For convenience, the [propertiesMap] argument can be used to create
+  /// properties from a map of property names to [ConfigurationSchemaNode]s.
+  /// This is equivalent to creating a [ConfProperty] for each entry in the map,
+  /// but does not require you to manually warp each [ConfigurationSchemaNode]
+  /// in a [ConfProperty].
+  ///
+  /// The [factory] argument is used to create [LoadConfigurationResult.value]
+  /// when loading an instance of this object. It is passed a map of property
+  /// names to loaded configuration values.
   ConfObject({
-    required Map<String, ConfigurationSchemaNode> properties,
-    required ConfObjectFactory<T> factory,
-  }) : this.fromProperties(
-          properties: {
-            for (final entry in properties.entries)
-              ConfProperty(entry.key, entry.value),
-          },
-          factory: factory,
-        );
-
-  /// Creates a new [ConfObject] with the given [properties] and [factory].
-  ConfObject.fromProperties({
-    required Iterable<ConfProperty> properties,
+    List<ConfProperty>? properties,
+    Map<String, ConfigurationSchemaNode>? propertiesMap,
     required ConfObjectFactory<T> factory,
   }) : _factory = factory {
-    properties.forEach(_addChild);
+    [
+      if (propertiesMap != null)
+        for (final entry in propertiesMap.entries)
+          ConfProperty(entry.key, entry.value),
+      ...?properties,
+    ].forEach(_addChild);
   }
 
   final ConfObjectFactory<T> _factory;
