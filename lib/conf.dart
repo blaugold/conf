@@ -1,4 +1,13 @@
-export 'src/error.dart' show ConfigurationError;
+export 'src/app_sources.dart' show AppSources;
+export 'src/error.dart' show ConfigurationError, ConfigurationException;
+export 'src/file.dart'
+    show
+        loadConfigurationFiles,
+        loadConfigurationFile,
+        loadJsonConfigurationFile,
+        loadYamlConfigurationFile;
+export 'src/profiles.dart'
+    show ConfProfiles, LoadProfilesExtension, Profiles, profilesProperty;
 export 'src/schema.dart'
     show
         ConfBoolean,
@@ -20,7 +29,6 @@ export 'src/schema.dart'
         ConfString,
         ConfUri,
         FunctionConfScalar,
-        LoadConfigurationResult,
         RootSchemaNode;
 export 'src/source.dart'
     show

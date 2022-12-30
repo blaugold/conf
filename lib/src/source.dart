@@ -138,7 +138,8 @@ class CombiningSource extends ConfigurationSource {
   /// The order of the sources determines the priority of the sources. The first
   /// source in the list has the highest priority and the last source in the
   /// list has the lowest priority.
-  CombiningSource(this._sources);
+  CombiningSource([List<ConfigurationSource>? sources])
+      : _sources = List.of(sources ?? <ConfigurationSource>[]);
 
   final List<ConfigurationSource> _sources;
 
@@ -175,6 +176,22 @@ class CombiningSource extends ConfigurationSource {
       }
     }
     return key.toString();
+  }
+
+  /// Adds [source] to the end of the list of sources.
+  ///
+  /// The source will have the lowest priority relative to the already added
+  /// sources.
+  void add(ConfigurationSource source) {
+    _sources.add(source);
+  }
+
+  /// Adds all of the sources in [sources] to the end of the list of sources.
+  ///
+  /// The sources will have the lowest priority relative to the already added
+  /// sources.
+  void addAll(Iterable<ConfigurationSource> sources) {
+    _sources.addAll(sources);
   }
 }
 
@@ -246,11 +263,11 @@ class EnvironmentSource extends ConfigurationSource {
 /// A [ConfigurationSource] that reads configuration values from a nested
 /// structure of maps and lists.
 ///
-/// The root of the structure must be a [Map]<String, Object?>. All other values
+/// The root of the structure must be a [Map]. All other values
 /// must be of one of the following types:
 ///
-/// - [Map]<String, Object?>
-/// - [List]<Object?>
+/// - [Map]
+/// - [List]
 /// - [String]
 /// - [bool]
 /// - [num]
@@ -261,18 +278,18 @@ class DataSource extends ConfigurationSource {
   /// The [description] is a human-readable description of the source of the
   /// data, for example, the path to a file.
   ///
-  /// The root of [data] must be a [Map]<String, Object?>. All other values
+  /// The root of [data] must be a [Map]. All other values
   /// must be of one of the following types:
   ///
-  /// - [Map]<String, Object?>
-  /// - [List]<Object?>
+  /// - [Map]
+  /// - [List]
   /// - [String]
   /// - [bool]
   /// - [num]
   /// - [Null]
   DataSource({
     required this.description,
-    required Map<String, Object?> data,
+    required Map<Object?, Object?> data,
   }) : _data = data;
 
   static const _missing = Object();
@@ -280,7 +297,7 @@ class DataSource extends ConfigurationSource {
   @override
   final String description;
 
-  final Map<String, Object?> _data;
+  final Map<Object?, Object?> _data;
 
   @override
   String? operator [](ConfigurationKey key) {
@@ -307,7 +324,7 @@ class DataSource extends ConfigurationSource {
     Object? current = _data;
     for (final segment in key.path) {
       if (segment is String) {
-        if (current is! Map<String, Object?>) {
+        if (current is! Map) {
           return _missing;
         }
         if (!current.containsKey(segment)) {
@@ -315,7 +332,7 @@ class DataSource extends ConfigurationSource {
         }
         current = current[segment];
       } else {
-        if (current is! List<Object?>) {
+        if (current is! List) {
           return _missing;
         }
         final index = segment as int;
@@ -385,12 +402,14 @@ class CommandLineSource extends ConfigurationSource {
   @override
   bool contains(ConfigurationKey key) {
     final prefix = key.toString();
-    return _arguments.keys.any((key) =>
-        key.startsWith(prefix) &&
-        // Prefix must end at a segment boundary.
-        (key.length == prefix.length ||
-            key[prefix.length] == '.' ||
-            key[prefix.length] == '['));
+    return _arguments.keys.any(
+      (key) =>
+          key.startsWith(prefix) &&
+          // Prefix must end at a segment boundary.
+          (key.length == prefix.length ||
+              key[prefix.length] == '.' ||
+              key[prefix.length] == '['),
+    );
   }
 
   @override
@@ -417,19 +436,23 @@ extension JsonConfExtension on ConfigurationSource {
     try {
       json = jsonDecode(jsonString);
     } on FormatException catch (e) {
-      throw ConfigurationError(
-        'Failed to parse JSON: ${e.message}',
-        source: this,
-        key: key,
-      );
+      throw ConfigurationException([
+        ConfigurationError(
+          'Failed to parse JSON: ${e.message}',
+          source: this,
+          key: key,
+        )
+      ]);
     }
 
     if (json is! Map<String, Object?>) {
-      throw ConfigurationError(
-        'Expected JSON value to be an object, but got ${json.runtimeType}.',
-        source: this,
-        key: key,
-      );
+      throw ConfigurationException([
+        ConfigurationError(
+          'Expected JSON value to be an object, but got ${json.runtimeType}.',
+          source: this,
+          key: key,
+        )
+      ]);
     }
 
     return DataSource(

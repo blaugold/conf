@@ -10,7 +10,7 @@ configuration values from from multiple sources, such as:
 - JSON files
 - YAML files
 
-Sources override each other in a specific order, that can be configured.
+Sources override each other in a configurable order.
 
 ## Installation
 
@@ -20,9 +20,12 @@ Add `conf` as a dependency in your `pubspec.yaml` file:
 dart pub add conf
 ```
 
-## Usage
+## Example
 
-### Schema
+See the [example package](https://github.com/blaugold/conf/tree/main/example)
+for a complete example.
+
+## Schema
 
 Before you can load configuration values, you need to define a schema. I
 recommend breaking your schema up into multiple classes, each of which holds
@@ -38,7 +41,7 @@ class DatabaseConfiguration {
     required this.password,
   });
 
-  factory DatabaseConfiguration.fromMap(Map<String, Object?> map) =>
+  factory DatabaseConfiguration._factory(Map<String, Object?> map) =>
       DatabaseConfiguration(
         url: map['url']! as Uri,
         username: map['username']! as String,
@@ -46,12 +49,12 @@ class DatabaseConfiguration {
       );
 
   static final schema = ConfObject(
-    properties: {
+    propertiesMap: {
       'url': ConfUri(),
       'username': ConfString(),
       'password': ConfString(),
     },
-    factory: DatabaseConfiguration.fromMap,
+    factory: DatabaseConfiguration._factory,
   );
 
   final Uri url;
@@ -62,8 +65,8 @@ class DatabaseConfiguration {
 
 Note that the `DatabaseConfiguration` class has a `schema` field that defines
 the configuration schema for the class. The `schema` field is a `ConfObject`
-that defines the configuration properties of the class and how to create the
-class from a map of property values.
+that defines the configuration properties of the class and how to create an
+instance of `DatabaseConfiguration` from a map of property values.
 
 Now lets define a `ServerConfiguration` class that contains the
 `DatabaseConfiguration` as well as the port and address to listen on:
@@ -76,7 +79,7 @@ class ServerConfiguration {
     required this.database,
   });
 
-  factory ServerConfiguration.fromMap(Map<String, Object?> map) =>
+  factory ServerConfiguration._factory(Map<String, Object?> map) =>
       ServerConfiguration(
         port: map['port']! as int,
         address: map['address']! as InternetAddress,
@@ -84,7 +87,7 @@ class ServerConfiguration {
       );
 
   static final schema = ConfObject(
-    properties: {
+    propertiesMap: {
       'port': ConfDefault(ConfInteger(), defaultValue: 8080),
       'address': ConfDefault(
         ConfInternetAddress(),
@@ -92,7 +95,7 @@ class ServerConfiguration {
       ),
       'database': DatabaseConfiguration.schema,
     },
-    factory: ServerConfiguration.fromMap,
+    factory: ServerConfiguration._factory,
   );
 
   final int port;
@@ -105,7 +108,7 @@ Here we use the `ConfDefault` class to define a default value for the `port` and
 `address` properties. We also use the `DatabaseConfiguration.schema` field to
 define the `database` property.
 
-#### Scalar values
+### Scalar values
 
 `conf` provides a number of builtin schema classes to load scalar values:
 
@@ -117,6 +120,7 @@ define the `database` property.
 - `ConfDateTime`
 - `ConfUri`
 - `ConfInternetAddress`
+- `ConfEnum`
 
 You can also define your own scalar value schema classes by extending the
 `ConfScalar` class. For example, here is the implementation of the
@@ -139,7 +143,7 @@ class ConfInternetAddress extends ConfScalar<InternetAddress> {
 }
 ```
 
-### Loading configuration values
+## Loading configuration
 
 To load the `ServerConfiguration` we need a `ConfigurationSource` that provides
 the configuration values. For simplicity, we'll provide the configuration values
@@ -156,19 +160,19 @@ final source = CombiningSource([
   })
 ]);
 
-final result = await ServerConfiguration.schema.load(source);
-if (result.hasErrors) {
-  print('Configuration is invalid:');
-  print(result.errors.join('\n'));
-  exit(1);
+try {
+  final configuration = await ServerConfiguration.schema.load(source);
+  // Do something with the configuration.
+} on ConfigurationException catch (error) {
+  stderr.writeln(error);
+  exitCode = 1;
 }
-
-final config = result.value;
 ```
 
-`conf` does not stop after the first error. Instead, it collects all errors and
-returns them in the `LoadConfigurationResult.errors` field. This allows you to
-display all errors at once, instead of fixing one error at a time.
+If loading the configuration fails, `load` throws a `ConfigurationException`.
+`conf` does not stop after encountering the first error. Instead, it collects
+all errors and makes them available in `ConfigurationException.errors`. This
+allows you to display all errors at once, instead of fixing one error at a time.
 
 The example above demonstrates one of the core features of `conf`: The ability
 to load configuration values from multiples sources, which have different
@@ -187,7 +191,7 @@ Because we specified the `CommandLineSource` first, the `database.username`
 property is loaded from the command line argument instead of the environment
 variable.
 
-### Configuration sources
+## Configuration sources
 
 A `ConfigurationSource` is a lower-level representation of configuration values
 that makes it easy to load configuration values from different sources, such as:
@@ -197,3 +201,83 @@ that makes it easy to load configuration values from different sources, such as:
 - `DataSource`: Loads configuration values from a JSON-style data structure.
   Typically used to load configuration values from a JSON and YAML files.
 - `CombiningSource`: Combines multiple sources into a single source.
+
+### `AppSources`
+
+`AppSources` provide an easy way to load configuration sources in an opinionated
+way that is suitable for Dart applications, such as servers.
+
+`AppSources` assumes that the application defines a set of profiles. A profile
+is a named set of configuration values. For example, a server might have a `dev`
+profile for development and a `prod` profile for production. Multiple profiles
+can be active at the same time and are represented by the `Profiles` class.
+
+```dart
+enum Profile {
+  dev,
+  prod,
+  test;
+
+  /// The currently active profiles.
+  static Profiles<Profile> get active => Profiles.active as Profiles<Profile>;
+}
+```
+
+You specifying the active profiles as a comma separated list in the `--profiles`
+command line argument or the `PROFILES` environment. For example:
+
+```bash
+$ dart run server.dart --profiles="dev,test"
+```
+
+Continuing with the example from the previous section, we can use
+`AppSources.load` to load a `CombiningSource` that combines the command line and
+environment sources as well as configuration file sources from a well-known
+location.
+
+```dart
+class ServerConfiguration {
+
+  // ...
+
+  static Future<ServerConfiguration> load(
+    List<String> arguments, {
+    Set<Profile>? additionalProfiles,
+  }) async {
+    final sources = await AppSources.load(
+      arguments: arguments,
+      allProfiles: Profile.values,
+      defaultProfiles: {Profile.dev},
+      additionalProfiles: additionalProfiles,
+    );
+    return schema.load(sources);
+  }
+
+  // ...
+
+}
+```
+
+After `AppSources.load` returns, `Profiles.active` contains the active profiles.
+
+Configuration files are loaded from the following locations, in order or
+precedence:
+
+1. For each profile in alphabetical order:
+   1. `config/application.$profile.json`
+   2. `config/application.$profile.yaml`
+   3. `config/application.$profile.yml`
+2. The base configuration:
+   1. `config/application.json`
+   2. `config/application.yaml`
+   3. `config/application.yml`
+
+The paths are relative to the current working directory.
+
+When multiple profiles are active, the precedence between profiles is determined
+by sorting the profiles in alphabetical order. This is usually not something
+that should be relied on. Instead profiles that are going to be activated
+simultaneously should not have overlapping configuration values.
+
+Profile configuration files always have a higher precedence than the base
+configuration files.

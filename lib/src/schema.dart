@@ -26,14 +26,9 @@ abstract class ConfigurationSchemaNode<T> {
   /// Loads the configuration value defined by this schema node at the [key]
   /// prefix from the given [source].
   ///
-  /// If the value could be loaded successfully, the result will contain the
-  /// value in [LoadConfigurationResult.value]. Otherwise, the result will
-  /// contain all found configuration errors in
-  /// [LoadConfigurationResult.errors].
-  Future<LoadConfigurationResult<T>> load(
-    ConfigurationSource source,
-    ConfigurationKey key,
-  );
+  /// Throws a [ConfigurationError] if the configuration value could not be
+  /// loaded.
+  Future<T> load(ConfigurationSource source, ConfigurationKey key);
 
   void _addChild(ConfigurationSchemaNode child) {
     if (_parent != null) {
@@ -50,10 +45,7 @@ abstract class ConfigurationSchemaNode<T> {
 /// [ConfigurationSource] without requiring a [ConfigurationKey].
 abstract class RootSchemaNode<T> extends ConfigurationSchemaNode<T> {
   @override
-  Future<LoadConfigurationResult<T>> load(
-    ConfigurationSource source, [
-    ConfigurationKey? key,
-  ]);
+  Future<T> load(ConfigurationSource source, [ConfigurationKey? key]);
 }
 
 abstract class _SingleChildConfigurationSchemaNode<C, T>
@@ -71,26 +63,6 @@ abstract class _ProxyConfigurationSchemaNode<T>
   _ProxyConfigurationSchemaNode(super.child);
 }
 
-/// The result of loading a configuration value from a configuration schema
-/// through [ConfigurationSchemaNode.load].
-class LoadConfigurationResult<T> {
-  /// Creates a successful result with the given [value].
-  LoadConfigurationResult.success(this.value) : errors = const [];
-
-  /// Creates a failed result with the given [errors].
-  LoadConfigurationResult.failure(this.errors) : value = null;
-
-  /// The loaded value, or `null` if loading the value failed.
-  final T? value;
-
-  /// The errors that occurred while trying to load a value, or an empty list if
-  /// loading a value succeeded.
-  final List<ConfigurationError> errors;
-
-  /// Whether loading a value failed.
-  bool get hasErrors => errors.isNotEmpty;
-}
-
 /// A [ConfigurationSchemaNode] that loads a single value from it's string
 /// representation.
 abstract class ConfScalar<T> extends ConfigurationSchemaNode<T> {
@@ -104,14 +76,11 @@ abstract class ConfScalar<T> extends ConfigurationSchemaNode<T> {
   FutureOr<T> loadValue(String value);
 
   @override
-  Future<LoadConfigurationResult<T>> load(
-    ConfigurationSource source,
-    ConfigurationKey? key,
-  ) async {
+  Future<T> load(ConfigurationSource source, ConfigurationKey? key) async {
     final value = source[key!];
 
     if (value == null) {
-      return LoadConfigurationResult.failure([
+      throw ConfigurationException([
         ConfigurationError(
           'Expected a value.',
           source: source,
@@ -121,10 +90,10 @@ abstract class ConfScalar<T> extends ConfigurationSchemaNode<T> {
     }
 
     try {
-      return LoadConfigurationResult.success(await loadValue(value));
+      return await loadValue(value);
       // ignore: avoid_catches_without_on_clauses
     } catch (error) {
-      return LoadConfigurationResult.failure([
+      throw ConfigurationException([
         ConfigurationError(error.toString(), source: source, key: key),
       ]);
     }
@@ -238,14 +207,11 @@ class ConfNullable<T> extends _SingleChildConfigurationSchemaNode<T, T?> {
   ConfNullable(super.child);
 
   @override
-  Future<LoadConfigurationResult<T?>> load(
-    ConfigurationSource source,
-    ConfigurationKey key,
-  ) async {
+  Future<T?> load(ConfigurationSource source, ConfigurationKey key) async {
     if (source.contains(key)) {
       return child.load(source, key);
     } else {
-      return LoadConfigurationResult.success(null);
+      return null;
     }
   }
 }
@@ -258,14 +224,11 @@ class ConfDefault<T> extends _ProxyConfigurationSchemaNode<T> {
   final T defaultValue;
 
   @override
-  Future<LoadConfigurationResult<T>> load(
-    ConfigurationSource source,
-    ConfigurationKey key,
-  ) async {
+  Future<T> load(ConfigurationSource source, ConfigurationKey key) async {
     if (source.contains(key)) {
       return child.load(source, key);
     } else {
-      return LoadConfigurationResult.success(defaultValue);
+      return defaultValue;
     }
   }
 }
@@ -281,10 +244,7 @@ class ConfRebase<T> extends _ProxyConfigurationSchemaNode<T>
   final ConfigurationKey base;
 
   @override
-  Future<LoadConfigurationResult<T>> load(
-    ConfigurationSource source, [
-    ConfigurationKey? key,
-  ]) {
+  Future<T> load(ConfigurationSource source, [ConfigurationKey? key]) {
     final childKey = key != null ? key + base : base;
     return child.load(source, childKey);
   }
@@ -296,10 +256,7 @@ class ConfList<T> extends _SingleChildConfigurationSchemaNode<T, List<T>> {
   ConfList(super.child);
 
   @override
-  Future<LoadConfigurationResult<List<T>>> load(
-    ConfigurationSource source,
-    ConfigurationKey key,
-  ) async {
+  Future<List<T>> load(ConfigurationSource source, ConfigurationKey key) async {
     final list = <T>[];
     final errors = <ConfigurationError>[];
 
@@ -314,18 +271,15 @@ class ConfList<T> extends _SingleChildConfigurationSchemaNode<T, List<T>> {
       }
     }
 
-    await Future.wait(elementKeys().map((elementKey) async {
-      final result = await child.load(source, elementKey);
-      if (result.hasErrors) {
-        errors.addAll(result.errors);
-      } else {
-        list.add(result.value as T);
-      }
-    }));
+    await Future.wait(
+      elementKeys().map((elementKey) async {
+        await ConfigurationException.collectErrors(errors, () async {
+          list.add(await child.load(source, elementKey));
+        });
+      }),
+    );
 
-    return errors.isEmpty
-        ? LoadConfigurationResult.success(list)
-        : LoadConfigurationResult.failure(errors);
+    return errors.isEmpty ? list : throw ConfigurationException(errors);
   }
 }
 
@@ -337,25 +291,28 @@ typedef ConfObjectFactory<T> = T Function(Map<String, Object?> properties);
 /// multiple configuration values into a single object.
 class ConfObject<T> extends ConfigurationSchemaNode<T>
     implements RootSchemaNode<T> {
-  /// Convenience constructor that creates a new [ConfObject]
-  /// without having to create a [ConfProperty] for each property.
+  /// Creates a new [ConfObject] with the given [properties].
+  ///
+  /// For convenience, the [propertiesMap] argument can be used to create
+  /// properties from a map of property names to [ConfigurationSchemaNode]s.
+  /// This is equivalent to creating a [ConfProperty] for each entry in the map,
+  /// but does not require you to manually warp each [ConfigurationSchemaNode]
+  /// in a [ConfProperty].
+  ///
+  /// The [factory] argument is used to create the a value of type [T]
+  /// when loading an instance of this object. It is passed a map of property
+  /// names to loaded configuration values.
   ConfObject({
-    required Map<String, ConfigurationSchemaNode> properties,
-    required ConfObjectFactory<T> factory,
-  }) : this.fromProperties(
-          properties: {
-            for (final entry in properties.entries)
-              ConfProperty(entry.key, entry.value),
-          },
-          factory: factory,
-        );
-
-  /// Creates a new [ConfObject] with the given [properties] and [factory].
-  ConfObject.fromProperties({
-    required Iterable<ConfProperty> properties,
+    List<ConfProperty>? properties,
+    Map<String, ConfigurationSchemaNode>? propertiesMap,
     required ConfObjectFactory<T> factory,
   }) : _factory = factory {
-    properties.forEach(_addChild);
+    [
+      if (propertiesMap != null)
+        for (final entry in propertiesMap.entries)
+          ConfProperty(entry.key, entry.value),
+      ...?properties,
+    ].forEach(_addChild);
   }
 
   final ConfObjectFactory<T> _factory;
@@ -364,25 +321,21 @@ class ConfObject<T> extends ConfigurationSchemaNode<T>
   List<ConfProperty> get properties => _children.cast();
 
   @override
-  Future<LoadConfigurationResult<T>> load(
-    ConfigurationSource source, [
-    ConfigurationKey? key,
-  ]) async {
+  Future<T> load(ConfigurationSource source, [ConfigurationKey? key]) async {
     final map = <String, Object?>{};
     final errors = <ConfigurationError>[];
 
-    await Future.wait(properties.map((property) async {
-      final result = await property.load(source, key);
-      if (result.hasErrors) {
-        errors.addAll(result.errors);
-      } else {
-        map[property.name] = result.value;
-      }
-    }));
+    await Future.wait(
+      properties.map((property) async {
+        await ConfigurationException.collectErrors(errors, () async {
+          map[property.name] = await property.load(source, key);
+        });
+      }),
+    );
 
     return errors.isEmpty
-        ? LoadConfigurationResult.success(_factory(map))
-        : LoadConfigurationResult.failure(errors);
+        ? _factory(map)
+        : throw ConfigurationException(errors);
   }
 
   @override

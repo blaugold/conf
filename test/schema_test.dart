@@ -10,25 +10,34 @@ void main() {
     test('reports error when value is missing', () async {
       final source = TestSource({});
       final scalar = ConfString();
-      final result = await scalar.load(source, keyA);
-      expect(result.hasErrors, isTrue);
-      expect(result.errors, hasLength(1));
-      expect(result.errors.first.key, equals(keyA));
-      expect(result.errors.first.source, equals(source));
-      expect(result.errors.first.message, equals('Expected a value.'));
+      expect(
+        scalar.load(source, keyA),
+        throwsA(
+          configurationException([
+            configurationError(
+              'Expected a value.',
+              source: source,
+              key: keyA,
+            )
+          ]),
+        ),
+      );
     });
 
     test('reports error when value is invalid', () async {
       final source = TestSource({'a': 'b'});
       final scalar = ConfBoolean();
-      final result = await scalar.load(source, keyA);
-      expect(result.hasErrors, isTrue);
-      expect(result.errors, hasLength(1));
-      expect(result.errors.first.key, equals(keyA));
-      expect(result.errors.first.source, equals(source));
       expect(
-        result.errors.first.message,
-        equals('FormatException: Expected a boolean value but got "b".'),
+        scalar.load(source, keyA),
+        throwsA(
+          configurationException([
+            configurationError(
+              'FormatException: Expected a boolean value but got "b".',
+              source: source,
+              key: keyA,
+            )
+          ]),
+        ),
       );
     });
 
@@ -44,9 +53,7 @@ void main() {
         'internetAddress': '127.0.0.1',
         'testEnum': 'a'
       });
-      final result = await BuiltinScalarsObject.schema.load(source);
-      expect(result.hasErrors, isFalse);
-      final value = result.value!;
+      final value = await BuiltinScalarsObject.schema.load(source);
       expect(value.string, equals('a'));
       expect(value.boolean, isTrue);
       expect(value.number, equals(1));
@@ -65,23 +72,19 @@ void main() {
   test('ConfNullable', () async {
     final source = TestSource({'a': 'true'});
     final scalar = ConfNullable(ConfBoolean());
-    var result = await scalar.load(source, keyA);
-    expect(result.hasErrors, isFalse);
-    expect(result.value, isTrue);
-    result = await scalar.load(source, ConfigurationKey(const ['b']));
-    expect(result.hasErrors, isFalse);
-    expect(result.value, isNull);
+    var value = await scalar.load(source, keyA);
+    expect(value, isTrue);
+    value = await scalar.load(source, ConfigurationKey(const ['b']));
+    expect(value, isNull);
   });
 
   test('ConfDefault', () async {
     final source = TestSource({'a': 'true'});
     final scalar = ConfDefault(ConfBoolean(), defaultValue: false);
-    var result = await scalar.load(source, keyA);
-    expect(result.hasErrors, isFalse);
-    expect(result.value, isTrue);
-    result = await scalar.load(source, ConfigurationKey(const ['b']));
-    expect(result.hasErrors, isFalse);
-    expect(result.value, isFalse);
+    var value = await scalar.load(source, keyA);
+    expect(value, isTrue);
+    value = await scalar.load(source, ConfigurationKey(const ['b']));
+    expect(value, isFalse);
   });
 
   group('ConfList', () {
@@ -90,23 +93,25 @@ void main() {
         'a': ['a']
       });
       final list = ConfList(ConfBoolean());
-      final result = await list.load(source, keyA);
-      expect(result.hasErrors, isTrue);
-      expect(result.errors, hasLength(1));
-      expect(result.errors.first.source, equals(source));
-      expect(result.errors.first.key, equals(keyA + 0));
       expect(
-        result.errors.first.message,
-        equals('FormatException: Expected a boolean value but got "a".'),
+        list.load(source, keyA),
+        throwsA(
+          configurationException([
+            configurationError(
+              'FormatException: Expected a boolean value but got "a".',
+              source: source,
+              key: keyA + 0,
+            )
+          ]),
+        ),
       );
     });
 
     test('empty list', () async {
       final source = TestSource({'a': []});
       final list = ConfList(ConfString());
-      final result = await list.load(source, keyA);
-      expect(result.hasErrors, isFalse);
-      expect(result.value, isEmpty);
+      final value = await list.load(source, keyA);
+      expect(value, isEmpty);
     });
 
     test('1 element list', () async {
@@ -114,9 +119,8 @@ void main() {
         'a': ['a']
       });
       final list = ConfList(ConfString());
-      final result = await list.load(source, keyA);
-      expect(result.hasErrors, isFalse);
-      expect(result.value, equals(['a']));
+      final value = await list.load(source, keyA);
+      expect(value, equals(['a']));
     });
 
     test('3 element list', () async {
@@ -124,31 +128,35 @@ void main() {
         'a': ['a', 'b', 'c']
       });
       final list = ConfList(ConfString());
-      final result = await list.load(source, keyA);
-      expect(result.hasErrors, isFalse);
-      expect(result.value, equals(['a', 'b', 'c']));
+      final value = await list.load(source, keyA);
+      expect(value, equals(['a', 'b', 'c']));
     });
   });
 
   group('ConfObject', () {
     test('reports errors from child values', () async {
       final source = TestSource({'a': 'a'});
-      final object =
-          ConfObject(properties: {'a': ConfBoolean()}, factory: (map) => map);
-      final result = await object.load(source);
-      expect(result.hasErrors, isTrue);
-      expect(result.errors, hasLength(1));
-      expect(result.errors.first.source, equals(source));
-      expect(result.errors.first.key, equals(keyA));
+      final object = ConfObject(
+        propertiesMap: {'a': ConfBoolean()},
+        factory: (map) => map,
+      );
       expect(
-        result.errors.first.message,
-        equals('FormatException: Expected a boolean value but got "a".'),
+        object.load(source),
+        throwsA(
+          configurationException([
+            configurationError(
+              'FormatException: Expected a boolean value but got "a".',
+              source: source,
+              key: keyA,
+            )
+          ]),
+        ),
       );
     });
 
     test('throws when property names are not unique', () {
       expect(
-        () => ConfObject.fromProperties(
+        () => ConfObject(
           properties: [
             ConfProperty('a', ConfString()),
             ConfProperty('a', ConfString()),
@@ -161,19 +169,17 @@ void main() {
 
     test('empty object', () async {
       final source = TestSource({});
-      final object = ConfObject(properties: {}, factory: (map) => map);
-      final result = await object.load(source);
-      expect(result.hasErrors, isFalse);
-      expect(result.value, equals({}));
+      final object = ConfObject(propertiesMap: {}, factory: (map) => map);
+      final value = await object.load(source);
+      expect(value, equals({}));
     });
 
     test('1 property object', () async {
       final source = TestSource({'a': 'a'});
       final object =
-          ConfObject(properties: {'a': ConfString()}, factory: (map) => map);
-      final result = await object.load(source);
-      expect(result.hasErrors, isFalse);
-      expect(result.value, equals({'a': 'a'}));
+          ConfObject(propertiesMap: {'a': ConfString()}, factory: (map) => map);
+      final value = await object.load(source);
+      expect(value, equals({'a': 'a'}));
     });
   });
 }
@@ -207,7 +213,7 @@ class BuiltinScalarsObject {
       );
 
   static final schema = ConfObject(
-    properties: {
+    propertiesMap: {
       'string': ConfString(),
       'boolean': ConfBoolean(),
       'number': ConfNumber(),

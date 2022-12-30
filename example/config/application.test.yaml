@@ -1,0 +1,4 @@
+database:
+  url: postgres://localhost:5432/db
+  username: test
+  password: password

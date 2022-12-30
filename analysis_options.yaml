@@ -13,9 +13,9 @@ linter:
     always_put_required_named_parameters_first: false
     always_specify_types: false
     always_use_package_imports: false
+    cascade_invocations: false
     prefer_asserts_with_message: false
     prefer_double_quotes: false
     prefer_final_parameters: false
     public_member_api_docs: false
-    require_trailing_commas: false
     unnecessary_final: false

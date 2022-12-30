@@ -1,0 +1,5 @@
+logRequests: true
+database:
+  url: postgres://localhost:5432/db
+  username: dev
+  password: password
