@@ -73,10 +73,12 @@ extension AppSources on CombiningSource {
   Future<void> addStaticSources<P extends Enum>({
     required Profiles profiles,
   }) async {
-    addAll(await loadConfigurationFiles(
-      directory: 'config',
-      configName: 'application',
-      variants: profiles.map((profile) => profile.name).toList(),
-    ));
+    addAll(
+      await loadConfigurationFiles(
+        directory: 'config',
+        configName: 'application',
+        variants: profiles.map((profile) => profile.name).toList(),
+      ),
+    );
   }
 }

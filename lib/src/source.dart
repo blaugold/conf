@@ -402,12 +402,14 @@ class CommandLineSource extends ConfigurationSource {
   @override
   bool contains(ConfigurationKey key) {
     final prefix = key.toString();
-    return _arguments.keys.any((key) =>
-        key.startsWith(prefix) &&
-        // Prefix must end at a segment boundary.
-        (key.length == prefix.length ||
-            key[prefix.length] == '.' ||
-            key[prefix.length] == '['));
+    return _arguments.keys.any(
+      (key) =>
+          key.startsWith(prefix) &&
+          // Prefix must end at a segment boundary.
+          (key.length == prefix.length ||
+              key[prefix.length] == '.' ||
+              key[prefix.length] == '['),
+    );
   }
 
   @override
@@ -434,19 +436,23 @@ extension JsonConfExtension on ConfigurationSource {
     try {
       json = jsonDecode(jsonString);
     } on FormatException catch (e) {
-      throw ConfigurationError(
-        'Failed to parse JSON: ${e.message}',
-        source: this,
-        key: key,
-      );
+      throw ConfigurationException([
+        ConfigurationError(
+          'Failed to parse JSON: ${e.message}',
+          source: this,
+          key: key,
+        )
+      ]);
     }
 
     if (json is! Map<String, Object?>) {
-      throw ConfigurationError(
-        'Expected JSON value to be an object, but got ${json.runtimeType}.',
-        source: this,
-        key: key,
-      );
+      throw ConfigurationException([
+        ConfigurationError(
+          'Expected JSON value to be an object, but got ${json.runtimeType}.',
+          source: this,
+          key: key,
+        )
+      ]);
     }
 
     return DataSource(

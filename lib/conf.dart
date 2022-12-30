@@ -1,5 +1,5 @@
 export 'src/app_sources.dart' show AppSources;
-export 'src/error.dart' show ConfigurationError;
+export 'src/error.dart' show ConfigurationError, ConfigurationException;
 export 'src/file.dart'
     show
         loadConfigurationFiles,
@@ -29,7 +29,6 @@ export 'src/schema.dart'
         ConfString,
         ConfUri,
         FunctionConfScalar,
-        LoadConfigurationResult,
         RootSchemaNode;
 export 'src/source.dart'
     show

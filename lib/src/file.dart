@@ -38,11 +38,13 @@ Future<List<ConfigurationSource>> loadConfigurationFiles({
     ...?variants?.map((profile) => '$baseFilePath.$profile'),
     baseFilePath,
   ]
-      .expand((filePath) => [
-            '$filePath.json',
-            '$filePath.yaml',
-            '$filePath.yml',
-          ])
+      .expand(
+        (filePath) => [
+          '$filePath.json',
+          '$filePath.yaml',
+          '$filePath.yml',
+        ],
+      )
       .where((filePath) => File(filePath).existsSync());
 
   return Future.wait(filePaths.map(loadConfigurationFile));
@@ -66,10 +68,12 @@ Future<DataSource> loadConfigurationFile(String filePath) async {
     case '.yml':
       return loadYamlConfigurationFile(filePath);
     default:
-      throw ConfigurationError(
-        'Unsupported configuration file extension: '
-        '"${path.canonicalize(filePath)}".',
-      );
+      throw ConfigurationException([
+        ConfigurationError(
+          'Unsupported configuration file extension: '
+          '"${path.canonicalize(filePath)}".',
+        )
+      ]);
   }
 }
 
@@ -88,17 +92,22 @@ Future<DataSource> loadJsonConfigurationFile(String filePath) async {
   try {
     json = jsonDecode(await file.readAsString());
   } on FormatException catch (error) {
-    throw ConfigurationError(
-      'Failed to parse file "${path.canonicalize(filePath)}" as JSON: '
-      '${error.message}',
-    );
+    throw ConfigurationException([
+      ConfigurationError(
+        'Failed to parse file "${path.canonicalize(filePath)}" as JSON: '
+        '${error.message}',
+      )
+    ]);
   }
 
   if (json is! Map<String, Object?>) {
-    throw ConfigurationError(
-      'Expected top level JSON value in file "${path.canonicalize(filePath)}" '
-      'to be an object, but got ${json.runtimeType}.',
-    );
+    throw ConfigurationException([
+      ConfigurationError(
+        'Expected top level JSON value in file '
+        '"${path.canonicalize(filePath)}" to be an object, but got '
+        '${json.runtimeType}.',
+      )
+    ]);
   }
 
   return DataSource(
@@ -122,17 +131,22 @@ Future<DataSource> loadYamlConfigurationFile(String filePath) async {
   try {
     yaml = loadYaml(await file.readAsString(), sourceUrl: file.absolute.uri);
   } on YamlException catch (e) {
-    throw ConfigurationError(
-      'Failed to parse file "${path.canonicalize(filePath)}" as YAML: '
-      '${e.message}',
-    );
+    throw ConfigurationException([
+      ConfigurationError(
+        'Failed to parse file "${path.canonicalize(filePath)}" as YAML: '
+        '${e.message}',
+      )
+    ]);
   }
 
   if (yaml is! Map) {
-    throw ConfigurationError(
-      'Expected top level YAML value in file "${path.canonicalize(filePath)}" '
-      'to be an object, but got ${yaml.runtimeType}.',
-    );
+    throw ConfigurationException([
+      ConfigurationError(
+        'Expected top level YAML value in file '
+        '"${path.canonicalize(filePath)}" to be an object, but got '
+        '${yaml.runtimeType}.',
+      )
+    ]);
   }
 
   return DataSource(

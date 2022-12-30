@@ -154,11 +154,10 @@ extension LoadProfilesExtension on ConfigurationSource {
     Set<T> defaultProfiles = const {},
     Set<T>? additionalProfiles,
   }) async {
-    final profilesFromSource = (await profilesProperty(
+    final profilesFromSource = await profilesProperty(
       allProfiles: allProfiles,
       defaultProfiles: defaultProfiles,
-    ).load(this))
-        .value!;
+    ).load(this);
 
     final profiles = Profiles({
       ...profilesFromSource,

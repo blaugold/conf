@@ -4,8 +4,6 @@ import 'dart:io';
 
 import 'package:conf/conf.dart';
 
-import 'error.dart';
-
 enum Profile {
   dev,
   prod,
@@ -40,19 +38,7 @@ class ServerConfiguration {
       defaultProfiles: {Profile.dev},
       additionalProfiles: additionalProfiles,
     );
-
-    final result = await schema.load(sources);
-    if (result.hasErrors) {
-      print('Could not load configuration:');
-      print('');
-      var i = 1;
-      for (final error in result.errors) {
-        print('${i++}. ${error.description}');
-      }
-      throw FatalException();
-    }
-
-    return result.value!;
+    return schema.load(sources);
   }
 
   static final schema = ConfObject(

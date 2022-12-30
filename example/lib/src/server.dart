@@ -3,14 +3,16 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:conf/conf.dart';
+
 import 'configuration.dart';
-import 'error.dart';
 
 Future<void> startServer(List<String> arguments) async {
   try {
     await _startServer(arguments);
-  } on FatalException catch (error) {
-    exitCode = error.exitCode;
+  } on ConfigurationException catch (error) {
+    stderr.writeln(error);
+    exitCode = 1;
   }
 }
 
