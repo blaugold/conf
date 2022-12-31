@@ -123,15 +123,15 @@ define the `database` property.
 - `ConfEnum`
 
 You can also define your own scalar value schema classes by extending the
-`ConfScalar` class. For example, here is the implementation of the
-`ConfInternetAddress` class:
+`ConfScalar` class, or one of its subclasses. For example, here is the
+implementation of the `ConfInternetAddress` class:
 
 ```dart
-class ConfInternetAddress extends ConfScalar<InternetAddress> {
+class ConfInternetAddress extends ParseConfScalar<InternetAddress> {
   ConfInternetAddress() : super('InternetAddress');
 
   @override
-  InternetAddress loadValue(String value) {
+  InternetAddress parse(String value) {
     final address = InternetAddress.tryParse(value);
     if (address == null) {
       throw FormatException(
