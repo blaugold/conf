@@ -133,14 +133,14 @@ void main() {
         },
         'd': [null, 'e', .0],
       });
-      expect(source[ConfigurationKey(const ['a'])], equals('true'));
+      expect(source[ConfigurationKey(const ['a'])], equals(true));
       expect(source[ConfigurationKey(const ['b'])], isNull);
-      expect(source[ConfigurationKey(const ['b', 'c'])], equals('0'));
+      expect(source[ConfigurationKey(const ['b', 'c'])], equals(0));
       expect(source[ConfigurationKey(const ['b', 'x'])], isNull);
       expect(source[ConfigurationKey(const ['d'])], isNull);
       expect(source[ConfigurationKey(const ['d', 0])], isNull);
       expect(source[ConfigurationKey(const ['d', 1])], equals('e'));
-      expect(source[ConfigurationKey(const ['d', 2])], equals('0.0'));
+      expect(source[ConfigurationKey(const ['d', 2])], equals(0.0));
       expect(source[ConfigurationKey(const ['d', 3])], isNull);
       expect(source[ConfigurationKey(const ['x'])], isNull);
     });
