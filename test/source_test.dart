@@ -133,14 +133,14 @@ void main() {
         },
         'd': [null, 'e', .0],
       });
-      expect(source[ConfigurationKey(const ['a'])], equals('true'));
+      expect(source[ConfigurationKey(const ['a'])], equals(true));
       expect(source[ConfigurationKey(const ['b'])], isNull);
-      expect(source[ConfigurationKey(const ['b', 'c'])], equals('0'));
+      expect(source[ConfigurationKey(const ['b', 'c'])], equals(0));
       expect(source[ConfigurationKey(const ['b', 'x'])], isNull);
       expect(source[ConfigurationKey(const ['d'])], isNull);
       expect(source[ConfigurationKey(const ['d', 0])], isNull);
       expect(source[ConfigurationKey(const ['d', 1])], equals('e'));
-      expect(source[ConfigurationKey(const ['d', 2])], equals('0.0'));
+      expect(source[ConfigurationKey(const ['d', 2])], equals(0.0));
       expect(source[ConfigurationKey(const ['d', 3])], isNull);
       expect(source[ConfigurationKey(const ['x'])], isNull);
     });
@@ -221,6 +221,41 @@ void main() {
       expect(source.describeKey(ConfigurationKey(const ['a'])), '--a');
       expect(source.describeKey(ConfigurationKey(const ['a', 0])), '--a[0]');
       expect(source.describeKey(ConfigurationKey(const ['a', 'b'])), '--a.b');
+    });
+  });
+
+  group('JsonConfExtension', () {
+    test('no value for conf.json ', () {
+      final source = TestSource({});
+      final jsonConfSource = source.loadJsonConf();
+      expect(jsonConfSource, isNull);
+    });
+
+    test('valid value for conf.json ', () {
+      final source = TestSource({
+        'conf': {'json': '{"a": true}'}
+      });
+      final jsonConfSource = source.loadJsonConf();
+      expect(jsonConfSource, isNotNull);
+      expect(jsonConfSource![ConfigurationKey(const ['a'])], equals(true));
+    });
+
+    test('throws if value for conf.json is not a string', () {
+      final source = TestSource({
+        'conf': {'json': true}
+      });
+      expect(
+        source.loadJsonConf,
+        throwsA(
+          configurationException([
+            configurationError(
+              'Expected value to be a string, but got bool.',
+              key: ConfigurationKey(const ['conf', 'json']),
+              source: source,
+            )
+          ]),
+        ),
+      );
     });
   });
 }

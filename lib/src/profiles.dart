@@ -89,14 +89,13 @@ class Profiles<T extends Enum> extends SetBase<T> {
 }
 
 /// A [ConfScalar] that loads a [Profiles] object.
-class ConfProfiles<T extends Enum> extends ConfScalar<Profiles<T>> {
+class ConfProfiles<T extends Enum> extends ParseConfScalar<Profiles<T>> {
   ConfProfiles(this.profiles) : super('Profiles');
 
   final List<T> profiles;
 
   @override
-  FutureOr<Profiles<T>> loadValue(String value) =>
-      Profiles(_parseProfilesListString(value));
+  Profiles<T> parse(String value) => Profiles(_parseProfilesListString(value));
 
   Set<T> _parseProfilesListString(String value) =>
       value.split(',').map(_parseProfile).toSet();

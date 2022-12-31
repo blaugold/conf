@@ -72,14 +72,17 @@ abstract class ConfScalar<T> extends ConfigurationSchemaNode<T> {
   /// The name of the type that this scalar loads.
   final String typeName;
 
-  /// Loads a value of this scalar's type from the given string [value].
-  FutureOr<T> loadValue(String value);
+  /// Loads a value of this scalar's type from the given [value].
+  ///
+  /// See the `[]` operator of [ConfigurationSource] for the possible types
+  /// of [value].
+  FutureOr<T> loadValue(Object? value);
 
   @override
   Future<T> load(ConfigurationSource source, ConfigurationKey? key) async {
     final value = source[key!];
 
-    if (value == null) {
+    if (value == null && !source.contains(key)) {
       throw ConfigurationException([
         ConfigurationError(
           'Expected a value.',
@@ -100,57 +103,80 @@ abstract class ConfScalar<T> extends ConfigurationSchemaNode<T> {
   }
 }
 
-/// a [ConfScalar] that uses a provided function to load values.
-abstract class FunctionConfScalar<T> extends ConfScalar<T> {
-  /// Creates a new scalar configuration schema node with the given [typeName]
-  /// and [_loadValue] function.
-  FunctionConfScalar(super.typeName, this._loadValue);
+/// A [ConfScalar] that loads a value from a string representation, if
+/// the value is not already of the correct type.
+abstract class ParseConfScalar<T> extends ConfScalar<T> {
+  ParseConfScalar(super.typeName);
 
-  final T Function(String value) _loadValue;
+  /// Parses a value of this scalar's type from the given string [value].
+  T parse(String value);
 
   @override
-  T loadValue(String value) => _loadValue(value);
+  T loadValue(Object? value) {
+    if (value is T) {
+      return value;
+    }
+    if (value is String) {
+      return parse(value);
+    }
+    throw FormatException(
+      'Cannot convert a value of type ${value.runtimeType} to $typeName.',
+      value,
+    );
+  }
+}
+
+/// A [ParseConfScalar] that uses a function to parse values.
+abstract class ParseFunctionConfScalar<T> extends ParseConfScalar<T> {
+  /// Creates a new scalar configuration schema node with the given [typeName]
+  /// and [_parse] function.
+  ParseFunctionConfScalar(super.typeName, this._parse);
+
+  final T Function(String value) _parse;
+
+  @override
+  T parse(String value) => _parse(value);
 }
 
 /// A [ConfScalar] that loads a [num] value.
-class ConfNumber extends FunctionConfScalar<num> {
+class ConfNumber extends ParseFunctionConfScalar<num> {
   ConfNumber() : super('Number', num.parse);
 }
 
 /// A [ConfScalar] that loads an [int] value.
-class ConfInteger extends FunctionConfScalar<int> {
+class ConfInteger extends ParseFunctionConfScalar<int> {
   ConfInteger() : super('Integer', int.parse);
 }
 
 /// A [ConfScalar] that loads a [double] value.
-class ConfDouble extends FunctionConfScalar<double> {
+class ConfDouble extends ParseFunctionConfScalar<double> {
   ConfDouble() : super('Double', double.parse);
 }
 
 /// A [ConfScalar] that loads a [Uri] value.
-class ConfUri extends FunctionConfScalar<Uri> {
+class ConfUri extends ParseFunctionConfScalar<Uri> {
   ConfUri() : super('URI', Uri.parse);
 }
 
 /// A [ConfScalar] that loads a [DateTime] value.
-class ConfDateTime extends FunctionConfScalar<DateTime> {
+class ConfDateTime extends ParseFunctionConfScalar<DateTime> {
   ConfDateTime() : super('DateTime', DateTime.parse);
 }
 
 /// A [ConfScalar] that loads a [String] value.
-class ConfString extends ConfScalar<String> {
+class ConfString extends ParseConfScalar<String> {
   ConfString() : super('String');
 
   @override
-  String loadValue(String value) => value;
+  String parse(String value) => value;
 }
 
 /// A [ConfScalar] that loads a [bool] value.
-class ConfBoolean extends ConfScalar<bool> {
+class ConfBoolean extends ParseConfScalar<bool> {
   ConfBoolean() : super('Boolean');
 
   @override
-  bool loadValue(String value) {
+  bool parse(String value) {
     switch (value.toLowerCase()) {
       case 'true':
         return true;
@@ -163,11 +189,11 @@ class ConfBoolean extends ConfScalar<bool> {
 }
 
 /// A [ConfScalar] that loads an [InternetAddress] value.
-class ConfInternetAddress extends ConfScalar<InternetAddress> {
+class ConfInternetAddress extends ParseConfScalar<InternetAddress> {
   ConfInternetAddress() : super('InternetAddress');
 
   @override
-  InternetAddress loadValue(String value) {
+  InternetAddress parse(String value) {
     final address = InternetAddress.tryParse(value);
     if (address == null) {
       throw FormatException(
@@ -179,14 +205,14 @@ class ConfInternetAddress extends ConfScalar<InternetAddress> {
 }
 
 /// A [ConfScalar] that loads an [Enum] value.
-class ConfEnum<T extends Enum> extends ConfScalar<T> {
+class ConfEnum<T extends Enum> extends ParseConfScalar<T> {
   ConfEnum(this.values) : super('Enum');
 
   /// The enum values that this scalar can load.
   final List<T> values;
 
   @override
-  T loadValue(String value) {
+  T parse(String value) {
     final enumValue =
         values.firstWhereOrNull((enumValue) => enumValue.name == value);
 

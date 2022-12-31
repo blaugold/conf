@@ -41,31 +41,60 @@ void main() {
       );
     });
 
-    test('builtin scalar types', () async {
-      final source = TestSource({
-        'string': 'a',
-        'boolean': 'true',
-        'number': '1',
-        'integer': '1',
-        'float': '1.0',
-        'uri': 'https://example.com',
-        'dateTime': '2021-01-01T00:00:00.000Z',
-        'internetAddress': '127.0.0.1',
-        'testEnum': 'a'
+    group('builtin scalar types', () {
+      test('with string values', () async {
+        final source = TestSource({
+          'string': 'a',
+          'boolean': 'true',
+          'number': '1',
+          'integer': '1',
+          'float': '1.0',
+          'uri': 'https://example.com',
+          'dateTime': '2021-01-01T00:00:00.000Z',
+          'internetAddress': '127.0.0.1',
+          'testEnum': 'a'
+        });
+        final value = await BuiltinScalarsObject.schema.load(source);
+        expect(value.string, equals('a'));
+        expect(value.boolean, isTrue);
+        expect(value.number, equals(1));
+        expect(value.integer, equals(1));
+        expect(value.float, equals(1.0));
+        expect(value.uri, equals(Uri.parse('https://example.com')));
+        expect(
+          value.dateTime,
+          equals(DateTime.parse('2021-01-01T00:00:00.000Z')),
+        );
+        expect(value.internetAddress, equals(InternetAddress.loopbackIPv4));
+        expect(value.testEnum, equals(TestEnum.a));
       });
-      final value = await BuiltinScalarsObject.schema.load(source);
-      expect(value.string, equals('a'));
-      expect(value.boolean, isTrue);
-      expect(value.number, equals(1));
-      expect(value.integer, equals(1));
-      expect(value.float, equals(1.0));
-      expect(value.uri, equals(Uri.parse('https://example.com')));
-      expect(
-        value.dateTime,
-        equals(DateTime.parse('2021-01-01T00:00:00.000Z')),
-      );
-      expect(value.internetAddress, equals(InternetAddress.loopbackIPv4));
-      expect(value.testEnum, equals(TestEnum.a));
+
+      test('with scalar target type values', () async {
+        final source = TestSource({
+          'string': 'a',
+          'boolean': true,
+          'number': 1,
+          'integer': 1,
+          'float': 1.0,
+          'uri': Uri.parse('https://example.com'),
+          'dateTime': DateTime.parse('2021-01-01T00:00:00.000Z'),
+          'internetAddress': InternetAddress.tryParse('127.0.0.1'),
+          'testEnum': TestEnum.a,
+        });
+        final value = await BuiltinScalarsObject.schema.load(source);
+        expect(value.string, equals('a'));
+        expect(value.boolean, isTrue);
+        expect(value.number, equals(1));
+        expect(value.integer, equals(1));
+        expect(value.float, equals(1.0));
+        expect(value.uri, equals(Uri.parse('https://example.com')));
+        expect(
+          value.dateTime,
+          equals(DateTime.parse('2021-01-01T00:00:00.000Z')),
+        );
+        expect(value.internetAddress, equals(InternetAddress.loopbackIPv4));
+        expect(value.testEnum, equals(TestEnum.a));
+      });
     });
   });
 
