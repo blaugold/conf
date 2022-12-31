@@ -1,3 +1,11 @@
+## 0.3.0
+
+> Note: This release has breaking changes.
+
+ - **DOCS**: update docs. ([b62e50e6](https://github.com/blaugold/conf.git/commit/b62e50e69ab985875016565c372a91d5c38f7f3a))
+ - **DOCS**: actually start server in example package. ([b7e3f867](https://github.com/blaugold/conf.git/commit/b7e3f8672088254a014d1a5f6f0309189ec84aae))
+ - **BREAKING** **FEAT**: improve handling of types from structured sources ([#6](https://github.com/blaugold/conf.git/issues/6)). ([6e6cafe3](https://github.com/blaugold/conf.git/commit/6e6cafe36aed6746d65e186243526622bf42d979))
+
 ## 0.2.0
 
 > Note: This release has breaking changes.
