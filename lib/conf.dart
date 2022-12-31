@@ -28,7 +28,8 @@ export 'src/schema.dart'
         ConfScalar,
         ConfString,
         ConfUri,
-        FunctionConfScalar,
+        ParseConfScalar,
+        ParseFunctionConfScalar,
         RootSchemaNode;
 export 'src/source.dart'
     show

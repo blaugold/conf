@@ -109,8 +109,17 @@ abstract class ConfigurationSource {
   /// Returns a description of this source.
   String get description;
 
-  /// Returns the value of the configuration under [key] as a string, or `null`
-  String? operator [](ConfigurationKey key);
+  /// Returns the value of the configuration under [key].
+  ///
+  /// If this source does not contain a value for [key], returns `null`.
+  /// To distinguish between a value of `null` and a missing value, use
+  /// [contains].
+  ///
+  /// The type of the value is determined by the source. For example, a source
+  /// that reads from a JSON file will return primary Dart types like [String],
+  /// [int], [double], [bool], [List], and [Map], while a source that reads from
+  /// environment variables will only return [String]s.
+  Object? operator [](ConfigurationKey key);
 
   /// Returns whether this source contains any values under [key] or any values
   /// whose keys are prefixed by [key].
@@ -147,7 +156,7 @@ class CombiningSource extends ConfigurationSource {
   String get description => 'combining source';
 
   @override
-  String? operator [](ConfigurationKey key) {
+  Object? operator [](ConfigurationKey key) {
     for (final source in _sources) {
       final value = source[key];
       if (value != null) {
@@ -300,18 +309,14 @@ class DataSource extends ConfigurationSource {
   final Map<Object?, Object?> _data;
 
   @override
-  String? operator [](ConfigurationKey key) {
+  Object? operator [](ConfigurationKey key) {
     final value = _getValue(key);
 
     if (value == _missing || value == null || value is Map || value is List) {
       return null;
     }
 
-    if (value is! String && value is! bool && value is! num) {
-      throw StateError('The value of $key is not a String, bool, or num.');
-    }
-
-    return value.toString();
+    return value;
   }
 
   @override
@@ -428,8 +433,18 @@ extension JsonConfExtension on ConfigurationSource {
   ConfigurationSource? loadJsonConf() {
     final key = ConfigurationKey(const ['conf', 'json']);
     final jsonString = this[key];
-    if (jsonString == null) {
+    if (jsonString == null && !contains(key)) {
       return null;
+    }
+
+    if (jsonString is! String) {
+      throw ConfigurationException([
+        ConfigurationError(
+          'Expected value to be a string, but got ${jsonString.runtimeType}.',
+          source: this,
+          key: key,
+        )
+      ]);
     }
 
     Object? json;

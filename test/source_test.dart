@@ -223,4 +223,39 @@ void main() {
       expect(source.describeKey(ConfigurationKey(const ['a', 'b'])), '--a.b');
     });
   });
+
+  group('JsonConfExtension', () {
+    test('no value for conf.json ', () {
+      final source = TestSource({});
+      final jsonConfSource = source.loadJsonConf();
+      expect(jsonConfSource, isNull);
+    });
+
+    test('valid value for conf.json ', () {
+      final source = TestSource({
+        'conf': {'json': '{"a": true}'}
+      });
+      final jsonConfSource = source.loadJsonConf();
+      expect(jsonConfSource, isNotNull);
+      expect(jsonConfSource![ConfigurationKey(const ['a'])], equals(true));
+    });
+
+    test('throws if value for conf.json is not a string', () {
+      final source = TestSource({
+        'conf': {'json': true}
+      });
+      expect(
+        source.loadJsonConf,
+        throwsA(
+          configurationException([
+            configurationError(
+              'Expected value to be a string, but got bool.',
+              key: ConfigurationKey(const ['conf', 'json']),
+              source: source,
+            )
+          ]),
+        ),
+      );
+    });
+  });
 }
